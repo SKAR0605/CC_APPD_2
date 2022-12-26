@@ -54,25 +54,53 @@ class _PracticePageState extends State<PracticePage>{
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('cards').snapshots(),
             builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot){
-              var totalCards = 0;
-              List<DocumentSnapshot> flashcards;
-                flashcards = snapshot.data!.docs;
-                totalCards = flashcards.length;
-                return Container(
-                  child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Card #$_display', style: TextStyle(color:Colors.white),),
-                        Spacer(flex: 1),
-                        Text(flashcards[_counter]['word'], style: TextStyle(color:Colors.white), textAlign: TextAlign.center),
-                      ]
-                  ),
+              if (snapshot.hasError){
+                return new Text('Error in receiving flashcards');
+              }
+              switch (snapshot.connectionState){
+                case ConnectionState.none: return new Text('Not connected to the Stream or null');
+                case ConnectionState.waiting:return new Text('Awaiting for interaction');
+                case ConnectionState.active: print("Stream has started but not finished");
+                var totalCards = 0;
+                List<DocumentSnapshot> flashcards;
+                if (snapshot.hasData){
+                  flashcards = snapshot.data!.docs;
+                  totalCards = flashcards.length;
+                  if (totalCards > 0){
+                    return Container(
+                      child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Card #$_display', style: TextStyle(color:Colors.white),),
+                            Spacer(flex: 1),
+                            Text(flashcards[_counter]['word'], style: TextStyle(color:Colors.white), textAlign: TextAlign.center),
+                          ]
+                      ),
 
-                  alignment: Alignment.center,
-                  width: 300,
-                  height: 200,
-                  color: Colors.black,
-                );
+                      alignment: Alignment.center,
+                      width: 300,
+                      height: 200,
+                      color: Colors.black,
+                    );
+
+                  }
+                }
+                return new Center(
+                    child: Column(
+                      children: <Widget>[
+                        new Padding(
+                          padding: const EdgeInsets.only(top: 50.0),
+                        ),
+                        new Text(
+                          "No flashcards found.",
+                        )
+                      ],
+                    ));
+              }
+              return Container(
+                child: new Text("No flashcards found."),
+              );
+
             },
           ),
 
@@ -89,3 +117,6 @@ class _PracticePageState extends State<PracticePage>{
   );
 
 }
+
+
+

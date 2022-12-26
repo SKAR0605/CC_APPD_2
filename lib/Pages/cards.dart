@@ -59,46 +59,74 @@ class _CardsPageState extends State<CardsPage>{
     body: StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('cards').snapshots(),
       builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot){
-        var totalCards = 0;
-        List<DocumentSnapshot> flashcards;
-          flashcards = snapshot.data!.docs;
-          totalCards = flashcards.length;
+        if (snapshot.hasError){
+          return new Text('Error in receiving flashcards');
+        }
+        switch (snapshot.connectionState) {
+          case ConnectionState.none: return new Text('Not connected to the stream');
+          case ConnectionState.active:
+            var totalCards = 0;
+            List<DocumentSnapshot> flashcards;
+            if (snapshot.hasData){
+              flashcards = snapshot.data!.docs;
+              totalCards = flashcards.length;
+              if (totalCards > 0){
+                return GridView.builder(
+                  itemBuilder: (BuildContext context, int index) {
+                    myList2.add(flashcards[index]['antonym']);
+                    return Container(
+                      child: Column(
+                          children: [
+                            Text(flashcards[index]['word'],
+                              style: TextStyle(color: Colors.white),),
+                            Text(flashcards[index]['antonym'],
+                              style: TextStyle(color: Colors.white),),
+                            IconButton(onPressed: () {
+                              myList2.remove(flashcards[index]['antonym']);
+                              var myid = flashcards[index].id;
+                              final docUser = FirebaseFirestore.instance.collection(
+                                  'cards').doc(myid);
+                              docUser.update({'word': FieldValue.delete()});
+                              docUser.update({'antonym': FieldValue.delete()});
+                            }, icon: Icon(Icons.delete), color: Colors.white,),
+                          ]
+                      ),
 
-          return GridView.builder(
-            itemBuilder: (BuildContext context, int index) {
-              myList2.add(flashcards[index]['antonym']);
-              return Container(
+                      alignment: Alignment.center,
+                      width: 200,
+                      height: 100,
+                      color: Colors.black,
+                    );
+                  }, itemCount: myList1.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisExtent: 100,
+                    mainAxisSpacing: 11,
+                    crossAxisSpacing: 11,
+                  ),
+                );
+
+              }
+            }
+            return new Center(
                 child: Column(
-                    children: [
-                      Text(flashcards[index]['word'],
-                        style: TextStyle(color: Colors.white),),
-                      Text(flashcards[index]['antonym'],
-                        style: TextStyle(color: Colors.white),),
-                      IconButton(onPressed: () {
-                        myList2.remove(flashcards[index]['antonym']);
-                        var myid = flashcards[index].id;
-                        final docUser = FirebaseFirestore.instance.collection(
-                            'cards').doc(myid);
-                        docUser.update({'word': FieldValue.delete()});
-                        docUser.update({'antonym': FieldValue.delete()});
-                      }, icon: Icon(Icons.delete), color: Colors.white,),
-                    ]
-                ),
+                  children: <Widget>[
+                    new Padding(
+                      padding: const EdgeInsets.only(top: 50.0),
+                    ),
+                    new Text(
+                      "No flashcards found.",
+                    )
+                  ],
+                ));
+          case ConnectionState.done:
+            return new Text('Streaming is done');
 
-                alignment: Alignment.center,
-                width: 200,
-                height: 100,
-                color: Colors.black,
-              );
-            }, itemCount: myList1.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisExtent: 100,
-              mainAxisSpacing: 11,
-              crossAxisSpacing: 11,
-            ),
-          );
-      },
+        }
+        return Container(
+          child: new Text("No flashcards found."),
+        );
+        },
     ),
       floatingActionButton: FloatingActionButton(
       child: Icon(Icons.add),
@@ -107,6 +135,9 @@ class _CardsPageState extends State<CardsPage>{
   ),
 
   );
+
+
+
 
 
 
